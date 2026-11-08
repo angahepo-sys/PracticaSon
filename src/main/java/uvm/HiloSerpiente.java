@@ -122,17 +122,17 @@ public class HiloSerpiente extends Thread {
     }
 
     // Métodos para el control desde la ventana
-    public synchronized void continuar() {
-        pausado = true;
-    }
+public synchronized void continuar() {
+    pausado = false;
+    notifyAll();
+}
 
-    public synchronized void pausar() {
-        pausado = false;
-        notifyAll();
-    }
+public synchronized void pausar() {
+    pausado = true;
+}
 
-    public void terminar() {
-        running = false;
-        this.interrupt();
-    }
+public void terminar() {
+    running = false;
+    this.interrupt();
+}
 }
