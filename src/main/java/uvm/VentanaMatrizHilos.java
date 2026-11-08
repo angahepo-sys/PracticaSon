@@ -330,20 +330,24 @@ private void terminarSerpiente() {
     // Métodos privados para manejo de eventos (Limpiador)
     // -----------------------------------------------------------------
     private void iniciarLimpiador() {
-        System.out.println("Evento: Iniciar Limpiador");
+    if (hlim == null || !hlim.isAlive()) {
+        hlim = new HiloLimpiador(matriz);
+        hlim.start();
+    } else {
+        hlim.reanudarHilo();
     }
+}
 
-    private void pausarLimpiador() {
-        System.out.println("Evento: Pausar Limpiador");
+private void pausarLimpiador() {
+    if (hlim != null && hlim.isAlive()) {
+        hlim.pausarHilo();
     }
+}
 
-    private void terminarLimpiador() {
-        System.out.println("Evento: Terminar Limpiador");
+private void terminarLimpiador() {
+    if (hlim != null && hlim.isAlive()) {
+        hlim.terminarHilo();
     }
-
-    // Métodos auxiliares para acceso de los estudiantes
-    public JLabel[][] getMatrizLabels() {
-        return matriz;
-    }
+}
 
 }
