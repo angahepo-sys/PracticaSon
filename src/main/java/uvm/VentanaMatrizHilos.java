@@ -253,17 +253,33 @@ public class VentanaMatrizHilos extends JFrame {
     // -----------------------------------------------------------------
     // Métodos privados para manejo de eventos (Serpiente)
     // -----------------------------------------------------------------
-    private void iniciarSerpiente() {
-        System.out.println("Evento: Iniciar Serpiente");
-    }
+    private HiloSerpiente serpiente;
+    
+private void iniciarSerpiente() {
 
-    private void pausarSerpiente() {
-        System.out.println("Evento: Pausar Serpiente");
+    if (serpiente == null || !serpiente.isAlive()) {
+        serpiente = new HiloSerpiente(matriz);
+        serpiente.start();
+    } else {
+        serpiente.continuar();
     }
+}
 
-    private void terminarSerpiente() {
-        System.out.println("Evento: Terminar Serpiente");
+private void pausarSerpiente() {
+
+    if (serpiente != null && serpiente.isAlive()) {
+        serpiente.pausar();
     }
+}
+
+private void terminarSerpiente() {
+
+    if (serpiente != null && serpiente.isAlive()) {
+        serpiente.terminar();
+
+        btIniciarS.setText("Continuar");
+    }
+}
 
     // -----------------------------------------------------------------
     // Métodos privados para manejo de eventos (Cazador)

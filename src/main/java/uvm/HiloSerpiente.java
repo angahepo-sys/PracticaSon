@@ -18,7 +18,7 @@ public class HiloSerpiente extends Thread {
 
     public HiloSerpiente(JLabel[][] matriz) {
         this.matriz = matriz;
-        // Posición inicial de la serpiente (ej. en la esquina superior izquierda)
+        // Posición inicial de la serpiente
         cuerpo.add(new Point(0, 0));
         cuerpo.add(new Point(0, 1));
         cuerpo.add(new Point(0, 2));
@@ -43,7 +43,7 @@ public class HiloSerpiente extends Thread {
 
                 // Actualizar la interfaz gráfica de forma segura en el EDT
                 SwingUtilities.invokeLater(() -> {
-                    // 1. Borrar la cola de la serpiente (la deja blanca/por defecto)
+                    // 1. Borrar la cola de la serpiente
                     if (!cuerpo.isEmpty()) {
                         Point cola = cuerpo.peekLast();
                         if (cola != null && cola.x >= 0 && cola.x < filas && cola.y >= 0 && cola.y < columnas) {
@@ -72,7 +72,7 @@ public class HiloSerpiente extends Thread {
                     Point nuevaCabeza = new Point(nuevaFila, nuevaCol);
                     cuerpo.addFirst(nuevaCabeza);
                     
-                    // Limitar el tamaño de la serpiente para que no llene el 100% sola
+                    // Limitar el tamaño de la serpiente
                     if (cuerpo.size() > 15) {
                         cuerpo.removeLast();
                     }
@@ -81,7 +81,7 @@ public class HiloSerpiente extends Thread {
                     for (int i = 0; i < cuerpo.size(); i++) {
                         Point p = cuerpo.get(i);
                         matriz[p.x][p.y].setBackground(Color.GREEN);
-                        matriz[p.x][p.y].setText(i == 0 ? "O" : "o"); // 'O' para la cabeza, 'o' para el cuerpo
+                        matriz[p.x][p.y].setText(i == 0 ? "O" : "o");
                     }
                 });
 
