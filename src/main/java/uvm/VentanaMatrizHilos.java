@@ -349,5 +349,9 @@ private void terminarLimpiador() {
         hlim.terminarHilo();
     }
 }
+    // Métodos auxiliares para acceso de los estudiantes
+public JLabel[][] getMatrizLabels() {
+    return matriz;
+}
 
 }
