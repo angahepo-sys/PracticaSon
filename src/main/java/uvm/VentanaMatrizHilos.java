@@ -5,6 +5,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class VentanaMatrizHilos extends JFrame {
+    HiloCazador hcaz;
+    HiloClima hcli;
+    HiloLimpiador hlim;
+    HiloRebotador hreb;
+    HiloSerpiente hser;
 
     // Matriz de 15x15 JLabels (Recurso Compartido)
     private JLabel[][] matriz = new JLabel[15][15];
