@@ -1,12 +1,22 @@
 package uvm;
 
 import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.lang.reflect.InvocationTargetException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class HiloLimpiador extends Thread {
+
+    private static final Logger LOGGER = Logger.getLogger(HiloLimpiador.class.getName());
+
+    private static final int TAMANO_BLOQUE = 5;
+
     private final JLabel[][] matriz;
     private volatile boolean running = true;
     private boolean pausado = false;
+
+    private int bloqueActual = 0;
 
     public HiloLimpiador(JLabel[][] matriz) {
         this.matriz = matriz;
@@ -14,57 +24,95 @@ public class HiloLimpiador extends Thread {
 
     @Override
     public void run() {
-        int totalCeldas = matriz.length * matriz[0].length;
-
         while (running) {
             try {
                 Thread.sleep(1000);
+                esperarActivo();
 
-                synchronized (this) {
-                    while (pausado) {
-                        wait();
-                    }
-                }
-
-                int celdasModificadas = 0;
-                for (int i = 0; i < matriz.length; i++) {
-                    for (int j = 0; j < matriz[i].length; j++) {
-                        if (!matriz[i][j].getBackground().equals(Color.WHITE) || !matriz[i][j].getText().equals("-")) {
-                            celdasModificadas++;
-                        }
-                    }
-                }
-
-                double porcentaje = (double) celdasModificadas / totalCeldas;
-
-                if (porcentaje > 0.5) {
-                    System.out.println(" [HiloLimpiador] > 50% modificado (" + (porcentaje * 100) + "%). Limpiando bloque...");
-
-                    SwingUtilities.invokeLater(() -> {
-                        limpiarBloqueMatriz();
-                    });
+                if (running) {
+                    SwingUtilities.invokeAndWait(this::revisarMatriz);
                 }
 
             } catch (InterruptedException e) {
-                System.out.println(" [HiloLimpiador] Interrumpido.");
+                if (running) {
+                    LOGGER.log(Level.WARNING, "[HiloLimpiador] Interrumpido.", e);
+                }
                 Thread.currentThread().interrupt();
-                break;
+                running = false;
+
+            } catch (InvocationTargetException e) {
+                LOGGER.log(Level.SEVERE,
+                        "[HiloLimpiador] Error al revisar la matriz.", e);
+                running = false;
             }
         }
-        System.out.println(" [HiloLimpiador] Finalizado.");
+
+        LOGGER.info("[HiloLimpiador] Finalizado.");
     }
 
-    private void limpiarBloqueMatriz() {
-        int filas = matriz.length;
-        int columnas = matriz[0].length;
+    private synchronized void esperarActivo() throws InterruptedException {
+        while (pausado && running) {
+            wait();
+        }
+    }
 
-        for (int i = 0; i < filas / 2; i++) {
-            for (int j = 0; j < columnas; j++) {
-                matriz[i][j].setBackground(Color.WHITE);
-                matriz[i][j].setText("-");
+    private void revisarMatriz() {
+        int totalCeldas = matriz.length * matriz[0].length;
+        int celdasModificadas = contarCeldasModificadas();
+
+        double porcentaje = (double) celdasModificadas / totalCeldas;
+
+        if (porcentaje > 0.5) {
+            LOGGER.log(Level.INFO,
+                    "[HiloLimpiador] {0}% de la matriz modificada. Limpiando bloque...",
+                    porcentaje * 100);
+
+            limpiarSiguienteBloque();
+        }
+    }
+
+    private int contarCeldasModificadas() {
+        int celdasModificadas = 0;
+
+        for (int i = 0; i < matriz.length; i++) {
+            for (int j = 0; j < matriz[i].length; j++) {
+                JLabel celda = matriz[i][j];
+
+                boolean textoModificado = !"-".equals(celda.getText());
+                boolean textoColorModificado = !Color.BLACK.equals(celda.getForeground());
+                boolean fondoModificado = !Color.WHITE.equals(celda.getBackground());
+
+                if (textoModificado || textoColorModificado || fondoModificado) {
+                    celdasModificadas++;
+                }
             }
         }
-        System.out.println(" [HiloLimpiador] Bloque de la matriz limpiado y restablecido.");
+
+        return celdasModificadas;
+    }
+
+    private void limpiarSiguienteBloque() {
+        int bloquesPorFila = (matriz[0].length + TAMANO_BLOQUE - 1) / TAMANO_BLOQUE;
+        int totalBloques = bloquesPorFila
+                * ((matriz.length + TAMANO_BLOQUE - 1) / TAMANO_BLOQUE);
+
+        int inicioFila = (bloqueActual / bloquesPorFila) * TAMANO_BLOQUE;
+        int inicioColumna = (bloqueActual % bloquesPorFila) * TAMANO_BLOQUE;
+
+        int finFila = Math.min(inicioFila + TAMANO_BLOQUE, matriz.length);
+        int finColumna = Math.min(inicioColumna + TAMANO_BLOQUE, matriz[0].length);
+
+        for (int i = inicioFila; i < finFila; i++) {
+            for (int j = inicioColumna; j < finColumna; j++) {
+                matriz[i][j].setText("-");
+                matriz[i][j].setForeground(Color.BLACK);
+                matriz[i][j].setBackground(Color.WHITE);
+            }
+        }
+
+        LOGGER.info("[HiloLimpiador] Bloque limpiado correctamente.");
+
+        bloqueActual = (bloqueActual + 1) % totalBloques;
     }
 
     public synchronized void pausarHilo() {
@@ -78,7 +126,6 @@ public class HiloLimpiador extends Thread {
 
     public void terminarHilo() {
         running = false;
-        this.interrupt(); 
+        interrupt();
     }
-    
 }

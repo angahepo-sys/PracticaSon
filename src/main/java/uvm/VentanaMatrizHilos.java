@@ -1,22 +1,30 @@
+
 package uvm;
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.util.logging.Logger;
 
 public class VentanaMatrizHilos extends JFrame {
-    HiloCazador hcaz;
-    HiloClima hcli;
-    HiloLimpiador hlim;
-    HiloRebotador hreb;
-    private Thread hiloRebotadorThread;
-    HiloSerpiente hser;
 
-    // Matriz de 15x15 JLabels (Recurso Compartido)
+    private static final Logger LOGGER =
+            Logger.getLogger(VentanaMatrizHilos.class.getName());
+
+    private static final String TEXTO_INICIAR = "Iniciar";
+    private static final String TEXTO_PAUSA = "Pausa";
+    private static final String TEXTO_TERMINAR = "Terminar";
+
+    private transient HiloCazador hcaz;
+    private transient HiloLimpiador hlim;
+    private transient HiloRebotador hreb;
+    private transient Thread hiloRebotadorThread;
+    private transient HiloSerpiente serpiente;
+
+    // Matriz de 15x15 JLabels
     private JLabel[][] matriz = new JLabel[15][15];
 
-    // Contador de símbolos encontrados por el Cazador
-private JLabel lblContador = new JLabel("Símbolos: 0");
+    // Contador de símbolos encontrados
+    private JLabel lblContador = new JLabel("Símbolos: 0");
 
     // Botones Hilo Serpiente
     private JButton btIniciarS;
@@ -47,21 +55,21 @@ private JLabel lblContador = new JLabel("Símbolos: 0");
         super("Práctica de Concurrencia - Matriz Compartida");
         inicializarGUI();
         asociarEventos();
-        
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         pack();
-        setLocationRelativeTo(null); // Centrar en pantalla
+        setLocationRelativeTo(null);
     }
 
     private void inicializarGUI() {
         setLayout(new BorderLayout(10, 10));
 
-        // -----------------------------------------------------------------
-        // CENTRO: Matriz 15x15 JLabels
-        // -----------------------------------------------------------------
+        // CENTRO: Matriz 15x15
         JPanel panelMatriz = new JPanel(new GridLayout(15, 15, 2, 2));
-        panelMatriz.setBorder(BorderFactory.createTitledBorder("Matriz Compartida (15x15)"));
-        
+        panelMatriz.setBorder(
+                BorderFactory.createTitledBorder("Matriz Compartida (15x15)")
+        );
+
         for (int fila = 0; fila < 15; fila++) {
             for (int col = 0; col < 15; col++) {
                 JLabel lbl = new JLabel("-", SwingConstants.CENTER);
@@ -69,34 +77,41 @@ private JLabel lblContador = new JLabel("Símbolos: 0");
                 lbl.setBackground(Color.WHITE);
                 lbl.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
                 lbl.setFont(new Font("Monospaced", Font.BOLD, 18));
-                
+
                 matriz[fila][col] = lbl;
                 panelMatriz.add(lbl);
             }
         }
+
         add(panelMatriz, BorderLayout.CENTER);
 
-        // -----------------------------------------------------------------
         // NORTE: Paneles Serpiente y Cazador
-        // -----------------------------------------------------------------
         JPanel panelNorte = new JPanel(new GridLayout(1, 2, 5, 5));
 
         // Subpanel Serpiente
         JPanel panelSerpiente = new JPanel(new FlowLayout());
-        panelSerpiente.setBorder(BorderFactory.createTitledBorder("Hilo Serpiente"));
-        btIniciarS = new JButton("Iniciar");
-        btPausaS = new JButton("Pausa");
-        btTerminarS = new JButton("Terminar");
+        panelSerpiente.setBorder(
+                BorderFactory.createTitledBorder("Hilo Serpiente")
+        );
+
+        btIniciarS = new JButton(TEXTO_INICIAR);
+        btPausaS = new JButton(TEXTO_PAUSA);
+        btTerminarS = new JButton(TEXTO_TERMINAR);
+
         panelSerpiente.add(btIniciarS);
         panelSerpiente.add(btPausaS);
         panelSerpiente.add(btTerminarS);
 
         // Subpanel Cazador
         JPanel panelCazador = new JPanel(new FlowLayout());
-        panelCazador.setBorder(BorderFactory.createTitledBorder("Hilo Cazador"));
-        btIniciarC = new JButton("Iniciar");
-        btPausaC = new JButton("Pausa");
-        btTerminarC = new JButton("Terminar");
+        panelCazador.setBorder(
+                BorderFactory.createTitledBorder("Hilo Cazador")
+        );
+
+        btIniciarC = new JButton(TEXTO_INICIAR);
+        btPausaC = new JButton(TEXTO_PAUSA);
+        btTerminarC = new JButton(TEXTO_TERMINAR);
+
         panelCazador.add(btIniciarC);
         panelCazador.add(btPausaC);
         panelCazador.add(btTerminarC);
@@ -106,27 +121,33 @@ private JLabel lblContador = new JLabel("Símbolos: 0");
         panelNorte.add(panelCazador);
         add(panelNorte, BorderLayout.NORTH);
 
-        // -----------------------------------------------------------------
         // SUR: Paneles Rebotador y Clima
-        // -----------------------------------------------------------------
         JPanel panelSur = new JPanel(new GridLayout(1, 2, 5, 5));
 
         // Subpanel Rebotador
         JPanel panelRebotador = new JPanel(new FlowLayout());
-        panelRebotador.setBorder(BorderFactory.createTitledBorder("Hilo Rebotador"));
-        btIniciarR = new JButton("Iniciar");
-        btPausaR = new JButton("Pausa");
-        btTerminarR = new JButton("Terminar");
+        panelRebotador.setBorder(
+                BorderFactory.createTitledBorder("Hilo Rebotador")
+        );
+
+        btIniciarR = new JButton(TEXTO_INICIAR);
+        btPausaR = new JButton(TEXTO_PAUSA);
+        btTerminarR = new JButton(TEXTO_TERMINAR);
+
         panelRebotador.add(btIniciarR);
         panelRebotador.add(btPausaR);
         panelRebotador.add(btTerminarR);
 
         // Subpanel Clima
         JPanel panelClima = new JPanel(new FlowLayout());
-        panelClima.setBorder(BorderFactory.createTitledBorder("Hilo Clima"));
-        btIniciarCl = new JButton("Iniciar");
-        btPausaCl = new JButton("Pausa");
-        btTerminarCl = new JButton("Terminar");
+        panelClima.setBorder(
+                BorderFactory.createTitledBorder("Hilo Clima")
+        );
+
+        btIniciarCl = new JButton(TEXTO_INICIAR);
+        btPausaCl = new JButton(TEXTO_PAUSA);
+        btTerminarCl = new JButton(TEXTO_TERMINAR);
+
         panelClima.add(btIniciarCl);
         panelClima.add(btPausaCl);
         panelClima.add(btTerminarCl);
@@ -135,270 +156,189 @@ private JLabel lblContador = new JLabel("Símbolos: 0");
         panelSur.add(panelClima);
         add(panelSur, BorderLayout.SOUTH);
 
-        // -----------------------------------------------------------------
-        // WEST: Panel Limpiador (Botones en Vertical)
-        // -----------------------------------------------------------------
+        // WEST: Panel Limpiador
         JPanel panelLimpiador = new JPanel(new GridLayout(3, 1, 5, 5));
-        panelLimpiador.setBorder(BorderFactory.createTitledBorder("Limpiador"));
-        btIniciarL = new JButton("Iniciar");
-        btPausaL = new JButton("Pausa");
-        btTerminarL = new JButton("Terminar");
-        
+        panelLimpiador.setBorder(
+                BorderFactory.createTitledBorder("Limpiador")
+        );
+
+        btIniciarL = new JButton(TEXTO_INICIAR);
+        btPausaL = new JButton(TEXTO_PAUSA);
+        btTerminarL = new JButton(TEXTO_TERMINAR);
+
         panelLimpiador.add(btIniciarL);
         panelLimpiador.add(btPausaL);
         panelLimpiador.add(btTerminarL);
 
-        JPanel panelWestContenedor = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel panelWestContenedor =
+                new JPanel(new FlowLayout(FlowLayout.CENTER));
+
         panelWestContenedor.add(panelLimpiador);
         add(panelWestContenedor, BorderLayout.WEST);
     }
 
     private void asociarEventos() {
+
         // Eventos Hilo Serpiente
-        btIniciarS.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                iniciarSerpiente();
-            }
-        });
-        btPausaS.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                pausarSerpiente();
-            }
-        });
-        btTerminarS.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                terminarSerpiente();
-            }
-        });
+        btIniciarS.addActionListener(e -> iniciarSerpiente());
+        btPausaS.addActionListener(e -> pausarSerpiente());
+        btTerminarS.addActionListener(e -> terminarSerpiente());
 
         // Eventos Hilo Cazador
-        btIniciarC.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                iniciarCazador();
-            }
-        });
-        btPausaC.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                pausarCazador();
-            }
-        });
-        btTerminarC.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                terminarCazador();
-            }
-        });
+        btIniciarC.addActionListener(e -> iniciarCazador());
+        btPausaC.addActionListener(e -> pausarCazador());
+        btTerminarC.addActionListener(e -> terminarCazador());
 
         // Eventos Hilo Rebotador
-        btIniciarR.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                iniciarRebotador();
-            }
-        });
-        btPausaR.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                pausarRebotador();
-            }
-        });
-        btTerminarR.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                terminarRebotador();
-            }
-        });
+        btIniciarR.addActionListener(e -> iniciarRebotador());
+        btPausaR.addActionListener(e -> pausarRebotador());
+        btTerminarR.addActionListener(e -> terminarRebotador());
 
         // Eventos Hilo Clima
-        btIniciarCl.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                iniciarClima();
-            }
-        });
-        btPausaCl.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                pausarClima();
-            }
-        });
-        btTerminarCl.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                terminarClima();
-            }
-        });
+        btIniciarCl.addActionListener(e -> iniciarClima());
+        btPausaCl.addActionListener(e -> pausarClima());
+        btTerminarCl.addActionListener(e -> terminarClima());
 
         // Eventos Hilo Limpiador
-        btIniciarL.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                iniciarLimpiador();
-            }
-        });
-        btPausaL.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                pausarLimpiador();
-            }
-        });
-        btTerminarL.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                terminarLimpiador();
-            }
-        });
+        btIniciarL.addActionListener(e -> iniciarLimpiador());
+        btPausaL.addActionListener(e -> pausarLimpiador());
+        btTerminarL.addActionListener(e -> terminarLimpiador());
     }
 
-    // -----------------------------------------------------------------
     // Métodos privados para manejo de eventos (Serpiente)
-    // -----------------------------------------------------------------
-    private HiloSerpiente serpiente;
-    
-private void iniciarSerpiente() {
 
-    if (serpiente == null || !serpiente.isAlive()) {
-        serpiente = new HiloSerpiente(matriz);
-        serpiente.start();
-    } else {
-        serpiente.continuar();
-    }
-}
-
-private void pausarSerpiente() {
-
-    if (serpiente != null && serpiente.isAlive()) {
-        serpiente.pausar();
-    }
-}
-
-private void terminarSerpiente() {
-
-    if (serpiente != null && serpiente.isAlive()) {
-        serpiente.terminar();
-
-        btIniciarS.setText("Continuar");
-    }
-}
-
-    // -----------------------------------------------------------------
-    // Métodos privados para manejo de eventos (Cazador)
-    // -----------------------------------------------------------------
-    private void iniciarCazador() {
-    System.out.println("Evento: Iniciar Cazador");
-
-    if (hcaz == null || !hcaz.isAlive()) {
-        lblContador.setText("Símbolos: 0");
-        hcaz = new HiloCazador(matriz, lblContador);
-        hcaz.start();
-        btPausaC.setText("Pausa");
-    } else if (hcaz.estaPausado()) {
-        hcaz.pausarContinuar();
-        btPausaC.setText("Pausa");
-    }
-}
-
-private void pausarCazador() {
-    System.out.println("Evento: Pausar Cazador");
-
-    if (hcaz != null && hcaz.isAlive()) {
-        hcaz.pausarContinuar();
-
-        if (hcaz.estaPausado()) {
-            btPausaC.setText("Continuar");
+    private void iniciarSerpiente() {
+        if (serpiente == null || !serpiente.isAlive()) {
+            serpiente = new HiloSerpiente(matriz);
+            serpiente.start();
         } else {
-            btPausaC.setText("Pausa");
+            serpiente.continuar();
         }
     }
-}
 
-private void terminarCazador() {
-    System.out.println("Evento: Terminar Cazador");
-
-    if (hcaz != null && hcaz.isAlive()) {
-        hcaz.terminar();
+    private void pausarSerpiente() {
+        if (serpiente != null && serpiente.isAlive()) {
+            serpiente.pausar();
+        }
     }
 
-    btPausaC.setText("Pausa");
-}
+    private void terminarSerpiente() {
+        if (serpiente != null && serpiente.isAlive()) {
+            serpiente.terminar();
+            btIniciarS.setText("Continuar");
+        }
+    }
 
-    // -----------------------------------------------------------------
+    // Métodos privados para manejo de eventos (Cazador)
+
+    private void iniciarCazador() {
+        LOGGER.info("Evento: Iniciar Cazador");
+
+        if (hcaz == null || !hcaz.isAlive()) {
+            lblContador.setText("Símbolos: 0");
+            hcaz = new HiloCazador(matriz, lblContador);
+            hcaz.start();
+            btPausaC.setText(TEXTO_PAUSA);
+        } else if (hcaz.estaPausado()) {
+            hcaz.pausarContinuar();
+            btPausaC.setText(TEXTO_PAUSA);
+        }
+    }
+
+    private void pausarCazador() {
+        LOGGER.info("Evento: Pausar Cazador");
+
+        if (hcaz != null && hcaz.isAlive()) {
+            hcaz.pausarContinuar();
+
+            if (hcaz.estaPausado()) {
+                btPausaC.setText("Continuar");
+            } else {
+                btPausaC.setText(TEXTO_PAUSA);
+            }
+        }
+    }
+
+    private void terminarCazador() {
+        LOGGER.info("Evento: Terminar Cazador");
+
+        if (hcaz != null && hcaz.isAlive()) {
+            hcaz.terminar();
+        }
+
+        btPausaC.setText(TEXTO_PAUSA);
+    }
+
     // Métodos privados para manejo de eventos (Rebotador)
-    // -----------------------------------------------------------------
+
     private void iniciarRebotador() {
-    System.out.println("Evento: Iniciar Rebotador");
+        LOGGER.info("Evento: Iniciar Rebotador");
 
-    if (hreb == null || !hiloRebotadorThread.isAlive()) {
-        hreb = new HiloRebotador(matriz, 0, 0);
-        hiloRebotadorThread = new Thread(hreb);
-        hiloRebotadorThread.start();
-    } else {
-        hreb.reanudar();
+        if (hreb == null || !hiloRebotadorThread.isAlive()) {
+            hreb = new HiloRebotador(matriz, 0, 0);
+            hiloRebotadorThread = new Thread(hreb);
+            hiloRebotadorThread.start();
+        } else {
+            hreb.reanudar();
+        }
     }
-}
 
-private void pausarRebotador() {
-    System.out.println("Evento: Pausar Rebotador");
+    private void pausarRebotador() {
+        LOGGER.info("Evento: Pausar Rebotador");
 
-    if (hreb != null) {
-        hreb.pausar();
+        if (hreb != null) {
+            hreb.pausar();
+        }
     }
-}
 
-private void terminarRebotador() {
-    System.out.println("Evento: Terminar Rebotador");
+    private void terminarRebotador() {
+        LOGGER.info("Evento: Terminar Rebotador");
 
-    if (hreb != null) {
-        hreb.detener();
+        if (hreb != null) {
+            hreb.detener();
+        }
     }
-}
 
-    // -----------------------------------------------------------------
     // Métodos privados para manejo de eventos (Clima)
-    // -----------------------------------------------------------------
+
     private void iniciarClima() {
-        System.out.println("Evento: Iniciar Clima");
+        LOGGER.info("Evento: Iniciar Clima");
     }
 
     private void pausarClima() {
-        System.out.println("Evento: Pausar Clima");
+        LOGGER.info("Evento: Pausar Clima");
     }
 
     private void terminarClima() {
-        System.out.println("Evento: Terminar Clima");
+        LOGGER.info("Evento: Terminar Clima");
     }
 
-    // -----------------------------------------------------------------
     // Métodos privados para manejo de eventos (Limpiador)
-    // -----------------------------------------------------------------
+
     private void iniciarLimpiador() {
-    if (hlim == null || !hlim.isAlive()) {
-        hlim = new HiloLimpiador(matriz);
-        hlim.start();
-    } else {
-        hlim.reanudarHilo();
+        if (hlim == null || !hlim.isAlive()) {
+            hlim = new HiloLimpiador(matriz);
+            hlim.start();
+        } else {
+            hlim.reanudarHilo();
+        }
     }
-}
 
-private void pausarLimpiador() {
-    if (hlim != null && hlim.isAlive()) {
-        hlim.pausarHilo();
+    private void pausarLimpiador() {
+        if (hlim != null && hlim.isAlive()) {
+            hlim.pausarHilo();
+        }
     }
-}
 
-private void terminarLimpiador() {
-    if (hlim != null && hlim.isAlive()) {
-        hlim.terminarHilo();
+    private void terminarLimpiador() {
+        if (hlim != null && hlim.isAlive()) {
+            hlim.terminarHilo();
+        }
     }
-}
-    // Métodos auxiliares para acceso de los estudiantes
-public JLabel[][] getMatrizLabels() {
-    return matriz;
-}
 
+    // Método auxiliar para acceso a la matriz
+
+    public JLabel[][] getMatrizLabels() {
+        return matriz;
+    }
 }

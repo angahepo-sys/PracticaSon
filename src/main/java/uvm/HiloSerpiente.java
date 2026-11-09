@@ -1,138 +1,115 @@
 package uvm;
 
 import javax.swing.*;
-import java.awt.*;
-import java.util.LinkedList;
-import java.util.Random;
+import java.awt.Color;
+import java.lang.reflect.InvocationTargetException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class HiloSerpiente extends Thread {
+
+    private static final Logger LOGGER = Logger.getLogger(HiloSerpiente.class.getName());
+
     private final JLabel[][] matriz;
     private volatile boolean running = true;
     private boolean pausado = false;
-    
-    // Representa las coordenadas de la serpiente en la matriz
-    private final LinkedList<Point> cuerpo = new LinkedList<>();
-    private int direccionFila = 0;
-    private int direccionCol = 1; // Empieza moviéndose hacia la derecha
-    private final Random random = new Random();
+
+    private int fila = 0;
+    private int columna = 0;
+    private int numero = 1;
 
     public HiloSerpiente(JLabel[][] matriz) {
         this.matriz = matriz;
-        // Posición inicial de la serpiente
-        cuerpo.add(new Point(0, 0));
-        cuerpo.add(new Point(0, 1));
-        cuerpo.add(new Point(0, 2));
     }
 
     @Override
     public void run() {
-        int filas = matriz.length;
-        int columnas = matriz[0].length;
-
-        while (running) {
+        while (running && numero <= matriz.length * matriz[0].length) {
             try {
-                // Velocidad de movimiento de la serpiente (en milisegundos)
-                Thread.sleep(400);
+                esperarActivo();
 
-                // Control de pausa sincronizado
-                synchronized (this) {
-                    while (pausado) {
-                        wait();
-                    }
-                }
-
-                // Actualizar la interfaz gráfica de forma segura en el EDT
-                SwingUtilities.invokeLater(() -> {
-                    // 1. Borrar la cola de la serpiente
-                    if (!cuerpo.isEmpty()) {
-                        Point cola = cuerpo.peekLast();
-                        if (cola != null && cola.x >= 0 && cola.x < filas && cola.y >= 0 && cola.y < columnas) {
-                            matriz[cola.x][cola.y].setBackground(Color.WHITE);
-                            matriz[cola.x][cola.y].setText("-");
-                        }
-                    }
-
-                    // 2. Calcular la nueva cabeza basada en la dirección actual
-                    Point cabezaActual = cuerpo.peekFirst();
-                    int nuevaFila = cabezaActual.x + direccionFila;
-                    int nuevaCol = cabezaActual.y + direccionCol;
-
-                    // Si choca con las paredes, cambia de dirección aleatoriamente
-                    if (nuevaFila < 0 || nuevaFila >= filas || nuevaCol < 0 || nuevaCol >= columnas) {
-                        cambiarDireccionAleatoria();
-                        nuevaFila = cabezaActual.x + direccionFila;
-                        nuevaCol = cabezaActual.y + direccionCol;
-                        
-                        // Asegurar límites seguros
-                        nuevaFila = Math.max(0, Math.min(nuevaFila, filas - 1));
-                        nuevaCol = Math.max(0, Math.min(nuevaCol, columnas - 1));
-                    }
-
-                    // Agregar nueva cabeza
-                    Point nuevaCabeza = new Point(nuevaFila, nuevaCol);
-                    cuerpo.addFirst(nuevaCabeza);
-                    
-                    // Limitar el tamaño de la serpiente
-                    if (cuerpo.size() > 15) {
-                        cuerpo.removeLast();
-                    }
-
-                    // 3. Pintar la serpiente en la matriz (Color Verde)
-                    for (int i = 0; i < cuerpo.size(); i++) {
-                        Point p = cuerpo.get(i);
-                        matriz[p.x][p.y].setBackground(Color.GREEN);
-                        matriz[p.x][p.y].setText(i == 0 ? "O" : "o");
-                    }
-                });
-
-                // Ocasionalmente cambia de dirección para recorrer toda la matriz
-                if (random.nextInt(10) == 0) {
-                    cambiarDireccionAleatoria();
+                if (running) {
+                    escribirNumero();
+                    avanzarPosicion();
+                    Thread.sleep(400);
                 }
 
             } catch (InterruptedException e) {
-                System.out.println("⚠️ [HiloSerpiente] Interrumpido.");
+                if (running) {
+                    LOGGER.log(Level.WARNING, "[HiloSerpiente] Interrumpido.", e);
+                }
                 Thread.currentThread().interrupt();
-                break;
+                running = false;
             }
         }
-        System.out.println("🛑 [HiloSerpiente] Finalizado.");
+
+        LOGGER.info("[HiloSerpiente] Recorrido finalizado.");
     }
 
-    private void cambiarDireccionAleatoria() {
-        int opcion = random.nextInt(4);
-        switch (opcion) {
-            case 0: // Arriba
-                direccionFila = -1;
-                direccionCol = 0;
-                break;
-            case 1: // Abajo
-                direccionFila = 1;
-                direccionCol = 0;
-                break;
-            case 2: // Izquierda
-                direccionFila = 0;
-                direccionCol = -1;
-                break;
-            case 3: // Derecha
-                direccionFila = 0;
-                direccionCol = 1;
-                break;
+    private synchronized void esperarActivo() throws InterruptedException {
+        while (pausado && running) {
+            wait();
         }
     }
 
-    // Métodos para el control desde la ventana
-public synchronized void continuar() {
-    pausado = false;
-    notifyAll();
+    private void escribirNumero() throws InterruptedException {
+        final int filaActual = fila;
+        final int columnaActual = columna;
+        final int numeroActual = numero;
+
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                matriz[filaActual][columnaActual].setText(String.valueOf(numeroActual));
+                matriz[filaActual][columnaActual].setForeground(Color.BLUE);
+            });
+
+            numero++;
+
+        } catch (InvocationTargetException e) {
+            LOGGER.log(Level.SEVERE,
+                    "[HiloSerpiente] Error al escribir en la matriz.", e);
+            running = false;
+        }
+    }
+
+    private void avanzarPosicion() {
+        int columnas = matriz[0].length;
+
+        if (fila % 2 == 0) {
+            avanzarDerecha(columnas);
+        } else {
+            avanzarIzquierda();
+        }
+    }
+
+    private void avanzarDerecha(int columnas) {
+        if (columna < columnas - 1) {
+            columna++;
+        } else {
+            fila++;
+        }
+    }
+
+    private void avanzarIzquierda() {
+        if (columna > 0) {
+            columna--;
+        } else {
+            fila++;
+        }
+    }
+
+    public synchronized void continuar() {
+        pausado = false;
+        notifyAll();
+    }
+
+    public synchronized void pausar() {
+        pausado = true;
+    }
+
+    public void terminar() {
+        running = false;
+        interrupt();
+    }
 }
 
-public synchronized void pausar() {
-    pausado = true;
-}
-
-public void terminar() {
-    running = false;
-    this.interrupt();
-}
-}
