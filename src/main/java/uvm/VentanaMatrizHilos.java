@@ -15,6 +15,9 @@ public class VentanaMatrizHilos extends JFrame {
     // Matriz de 15x15 JLabels (Recurso Compartido)
     private JLabel[][] matriz = new JLabel[15][15];
 
+    // Contador de símbolos encontrados por el Cazador
+private JLabel lblContador = new JLabel("Símbolos: 0");
+
     // Botones Hilo Serpiente
     private JButton btIniciarS;
     private JButton btPausaS;
@@ -97,6 +100,7 @@ public class VentanaMatrizHilos extends JFrame {
         panelCazador.add(btIniciarC);
         panelCazador.add(btPausaC);
         panelCazador.add(btTerminarC);
+        panelCazador.add(lblContador);
 
         panelNorte.add(panelSerpiente);
         panelNorte.add(panelCazador);
@@ -286,16 +290,42 @@ private void terminarSerpiente() {
     // Métodos privados para manejo de eventos (Cazador)
     // -----------------------------------------------------------------
     private void iniciarCazador() {
-        System.out.println("Evento: Iniciar Cazador");
+    System.out.println("Evento: Iniciar Cazador");
+
+    if (hcaz == null || !hcaz.isAlive()) {
+        lblContador.setText("Símbolos: 0");
+        hcaz = new HiloCazador(matriz, lblContador);
+        hcaz.start();
+        btPausaC.setText("Pausa");
+    } else if (hcaz.estaPausado()) {
+        hcaz.pausarContinuar();
+        btPausaC.setText("Pausa");
+    }
+}
+
+private void pausarCazador() {
+    System.out.println("Evento: Pausar Cazador");
+
+    if (hcaz != null && hcaz.isAlive()) {
+        hcaz.pausarContinuar();
+
+        if (hcaz.estaPausado()) {
+            btPausaC.setText("Continuar");
+        } else {
+            btPausaC.setText("Pausa");
+        }
+    }
+}
+
+private void terminarCazador() {
+    System.out.println("Evento: Terminar Cazador");
+
+    if (hcaz != null && hcaz.isAlive()) {
+        hcaz.terminar();
     }
 
-    private void pausarCazador() {
-        System.out.println("Evento: Pausar Cazador");
-    }
-
-    private void terminarCazador() {
-        System.out.println("Evento: Terminar Cazador");
-    }
+    btPausaC.setText("Pausa");
+}
 
     // -----------------------------------------------------------------
     // Métodos privados para manejo de eventos (Rebotador)
