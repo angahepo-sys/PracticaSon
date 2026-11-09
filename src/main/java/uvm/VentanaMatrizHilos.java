@@ -9,6 +9,7 @@ public class VentanaMatrizHilos extends JFrame {
     HiloClima hcli;
     HiloLimpiador hlim;
     HiloRebotador hreb;
+    private Thread hiloRebotadorThread;
     HiloSerpiente hser;
 
     // Matriz de 15x15 JLabels (Recurso Compartido)
@@ -300,16 +301,32 @@ private void terminarSerpiente() {
     // Métodos privados para manejo de eventos (Rebotador)
     // -----------------------------------------------------------------
     private void iniciarRebotador() {
-        System.out.println("Evento: Iniciar Rebotador");
-    }
+    System.out.println("Evento: Iniciar Rebotador");
 
-    private void pausarRebotador() {
-        System.out.println("Evento: Pausar Rebotador");
+    if (hreb == null || !hiloRebotadorThread.isAlive()) {
+        hreb = new HiloRebotador(matriz, 0, 0);
+        hiloRebotadorThread = new Thread(hreb);
+        hiloRebotadorThread.start();
+    } else {
+        hreb.reanudar();
     }
+}
 
-    private void terminarRebotador() {
-        System.out.println("Evento: Terminar Rebotador");
+private void pausarRebotador() {
+    System.out.println("Evento: Pausar Rebotador");
+
+    if (hreb != null) {
+        hreb.pausar();
     }
+}
+
+private void terminarRebotador() {
+    System.out.println("Evento: Terminar Rebotador");
+
+    if (hreb != null) {
+        hreb.detener();
+    }
+}
 
     // -----------------------------------------------------------------
     // Métodos privados para manejo de eventos (Clima)
